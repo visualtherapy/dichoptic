@@ -15,7 +15,7 @@
     <title>Dichoptic Therapy</title>
     <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Exo+2:wght@300;400;600;700&display=swap" rel="stylesheet">
     <style>
-        :root { --bg: #03050a; --surface: #080d18; --surface2: #0d1526; --border: #1a2540; --green: #00ff88; --green-dim: #008844; --green-glow: rgba(0,255,136,0.25); --yellow: #ffd700; --red-eye: #ff2244; --cyan-eye: #00e5ff; --text: #c8d8f0; --text-muted: #4a6080; --card-radius: 14px; --bg-dynamic: #000000; }
+        :root { --bg: #03050a; --surface: c#080d18; --surface2: #0d1526; --border: #1a2540; --green: #00ff88; --green-dim: #008844; --green-glow: rgba(0,255,136,0.25); --yellow: #ffd700; --red-eye: #ff2244; --cyan-eye: #00e5ff; --text: #c8d8f0; --text-muted: #4a6080; --card-radius: 14px; --bg-dynamic: #000000; }
         * { -webkit-tap-highlight-color: transparent; -webkit-touch-callout: none; -webkit-user-select: none; user-select: none; box-sizing: border-box; margin: 0; padding: 0; }
         body { background: var(--bg-dynamic); color: var(--text); font-family: 'Exo 2', sans-serif; min-height: 100vh; display: flex; flex-direction: column; align-items: center; padding: 0 12px 24px; overflow-x: hidden; overflow-y: auto; transition: background-color 0.15s; }
         ::-webkit-scrollbar { width: 6px; } ::-webkit-scrollbar-track { background: transparent; } ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 6px; }
@@ -235,12 +235,29 @@
         </div>
 
         <div class="slider-group">
-            <div class="slider-group-title">1. Eye Filter Colors</div>
+            <div class="slider-group-title">1. Per-Eye Brightness</div>
+
+            <div class="sat-row">
+                <span class="eye-badge eye-red" style="flex-shrink:0;">Left Eye (Red)</span>
+                <input type="range" class="sat-slider" id="sliderIndLeft" min="0" max="100" value="26" oninput="updateConfig(); throttleTick();">
+                <span id="dispIndLeft" class="sat-val">26%</span>
+            </div>
+
+            <div class="sat-row">
+                <span class="eye-badge eye-cyan" id="labelIndRight" style="flex-shrink:0;">Right Eye (Cyan)</span>
+                <input type="range" class="sat-slider" id="sliderIndRight" min="0" max="100" value="28" oninput="updateConfig(); throttleTick();">
+                <span id="dispIndRight" class="sat-val">28%</span>
+            </div>
+        </div>
+
+        <div class="slider-group">
+            <div class="slider-group-title">2. Eye Filter Colors</div>
 
             <div class="sat-row">
                 <span class="eye-badge eye-red" style="flex-shrink:0;">Left (Red)</span>
                 <input type="range" class="sat-slider" id="sliderSatLeft" min="0" max="100" value="100" oninput="updateConfig(); throttleTick();">
                 <span id="dispSatLeft" class="sat-val">100%</span>
+
             </div>
 
             <div class="sat-row">
@@ -252,22 +269,6 @@
                 <input type="checkbox" id="chkGreenRight" onchange="toggleGreenRight(this.checked)" style="width:16px; height:16px; accent-color:var(--green); cursor:pointer; flex-shrink:0;">
                 <span style="font-size:0.82rem; color:var(--text-muted);">Switch Right Eye to <strong style="color:#00ff88;">Green</strong></span>
             </label>
-        </div>
-
-        <div class="slider-group">
-            <div class="slider-group-title">2. Per-Eye Brightness</div>
-
-            <div class="sat-row">
-                <span class="eye-badge eye-red" style="flex-shrink:0;">Left Eye (Red)</span>
-                <input type="range" class="sat-slider" id="sliderIndLeft" min="0" max="100" value="100" oninput="updateConfig(); throttleTick();">
-                <span id="dispIndLeft" class="sat-val">100%</span>
-            </div>
-
-            <div class="sat-row">
-                <span class="eye-badge eye-cyan" id="labelIndRight" style="flex-shrink:0;">Right Eye (Cyan)</span>
-                <input type="range" class="sat-slider" id="sliderIndRight" min="0" max="100" value="100" oninput="updateConfig(); throttleTick();">
-                <span id="dispIndRight" class="sat-val">100%</span>
-            </div>
         </div>
 
         <button class="btn btn-primary" onclick="SFX.bleep(); saveCalibration(); gotoMenu();" style="margin-top:12px;">Save &amp; Continue</button>
@@ -354,6 +355,7 @@
         <canvas id="gameCanvas" width="360" height="400"></canvas>
     </div>
 
+    <div id="chess-piece-display" style="display:none; width:100%; text-align:center; padding:6px 0 2px; font-family:Orbitron,monospace; font-size:0.95rem; font-weight:700; letter-spacing:0.12em; text-transform:uppercase; color:var(--cyan-eye); opacity:0.85;"></div>
     <button class="game-pause-btn" onclick="SFX.bleep(); gotoMenu()">⏸ Pause &amp; Back to Menu</button>
 
     <div id="ctrl-slider" class="control-area">
@@ -858,16 +860,16 @@
     function loadCalibration() {
         const pID = document.getElementById('pID').value.trim().toUpperCase() || 'DEFAULT';
         const raw = localStorage.getItem('dichoptic_calib_' + pID);
-        if(!raw) return;
-        try {
-            const c = JSON.parse(raw);
-            if(c.satLeft)  document.getElementById('sliderSatLeft').value  = c.satLeft;
-            if(c.satRight) document.getElementById('sliderSatRight').value = c.satRight;
-            if(c.indLeft)  document.getElementById('sliderIndLeft').value  = c.indLeft;
-            if(c.indRight) document.getElementById('sliderIndRight').value = c.indRight;
-        } catch(e) {}
+        if(raw) {
+            try {
+                const c = JSON.parse(raw);
+                if(c.satLeft)  document.getElementById('sliderSatLeft').value  = c.satLeft;
+                if(c.satRight) document.getElementById('sliderSatRight').value = c.satRight;
+            } catch(e) {}
+        }
+        document.getElementById('sliderIndLeft').value  = 26;
+        document.getElementById('sliderIndRight').value = 28;
     }
-
     function submitSession(sessionNum) {
         const pID = document.getElementById('pID').value.trim() || 'UNKNOWN';
         const now = new Date(); const endTime = now.toLocaleTimeString('en-US', { hour12: false }); const dateStr = now.toISOString().split('T')[0];
@@ -1471,7 +1473,7 @@
                 if(c.flash>0)c.flash--;
                 ctx.globalAlpha=alpha;
 
-                ctx.fillStyle = 'rgba(255,255,255,0.08)';
+                ctx.fillStyle = '#000000';
                 ctx.fillRect(Math.floor(bx+sx), Math.floor(by+sy), c.w, c.h);
 
                 ctx.strokeStyle = c.eye === 'left' ? appConfig.renderLeft : appConfig.renderRight;
@@ -1486,17 +1488,12 @@
                 ctx.globalAlpha=1;
             } else {
                 ctx.globalAlpha=1;
-                ctx.fillStyle = 'rgba(255,255,255,0.03)';
+                ctx.fillStyle = '#000000';
                 ctx.fillRect(Math.floor(bx+sx), Math.floor(by+sy), c.w, c.h);
                 
-                ctx.strokeStyle = 'rgba(255,255,255,0.1)';
-                ctx.lineWidth = 2;
-                ctx.strokeRect(Math.floor(bx+sx), Math.floor(by+sy), c.w, c.h);
-
-                ctx.fillStyle = 'rgba(255,255,255,0.1)';
-                ctx.beginPath();
-                ctx.arc(Math.floor(c.x+sx), Math.floor(c.y+sy), Math.min(c.w,c.h)*0.1, 0, Math.PI*2);
-                ctx.fill();
+                ctx.strokeStyle = 'rgba(255,255,255,0.35)';
+                ctx.lineWidth = 1;
+                ctx.strokeRect(Math.floor(bx+sx)+0.5, Math.floor(by+sy)+0.5, c.w-1, c.h-1);
             }
         });
         ctx.globalCompositeOperation='source-over';
@@ -1504,14 +1501,17 @@
 
     const PIECE_VALS={p:100,n:320,b:330,r:500,q:900,k:20000};const PIECE_CHARS={wp:'♟',wn:'♞',wb:'♝',wr:'♜',wq:'♛',wk:'♚',bp:'♟',bn:'♞',bb:'♝',br:'♜',bq:'♛',bk:'♚'};class ChessEngine{constructor(){this.reset()}reset(){this.board=Array(64).fill(null);const back=['r','n','b','q','k','b','n','r'];for(let f=0;f<8;f++){this.board[f]={c:'b',t:back[f]};this.board[8+f]={c:'b',t:'p'};this.board[48+f]={c:'w',t:'p'};this.board[56+f]={c:'w',t:back[f]}}this.turn='w';this.castling={wK:true,wQ:true,bK:true,bQ:true};this.enPassant=null;this.halfMoves=0;this.status='playing'}idx(r,f){return r*8+f}rank(i){return Math.floor(i/8)}file(i){return i%8}clone(){const g=new ChessEngine();g.board=[...this.board];g.turn=this.turn;g.castling={...this.castling};g.enPassant=this.enPassant;g.halfMoves=this.halfMoves;g.status=this.status;return g}pseudoLegal(forColor,ignoreCastling=false){const moves=[];const col=forColor||this.turn;for(let i=0;i<64;i++){const p=this.board[i];if(!p||p.c!==col)continue;const r=this.rank(i),f=this.file(i);switch(p.t){case 'p':const dir=col==='w'?-1:1;const startR=col==='w'?6:1;const promR=col==='w'?0:7;const fwd=i+dir*8;if(fwd>=0&&fwd<64&&!this.board[fwd]){if(this.rank(fwd)===promR)['q','r','b','n'].forEach(pt=>moves.push({from:i,to:fwd,promo:pt}));else{moves.push({from:i,to:fwd});if(r===startR&&!this.board[i+dir*16])moves.push({from:i,to:i+dir*16,double:true})}}for(const df of[-1,1]){const tf=f+df;if(tf<0||tf>7)continue;const ti=this.idx(r+dir,tf);if(ti<0||ti>=64)continue;if(this.board[ti]&&this.board[ti].c!==col){if(this.rank(ti)===promR)['q','r','b','n'].forEach(pt=>moves.push({from:i,to:ti,promo:pt}));else moves.push({from:i,to:ti})}if(this.enPassant===ti)moves.push({from:i,to:ti,ep:true})}break;case 'n':for(const[dr,df]of[[-2,-1],[-2,1],[-1,-2],[-1,2],[1,-2],[1,2],[2,-1],[2,1]]){const nr=r+dr,nf=f+df;if(nr<0||nr>7||nf<0||nf>7)continue;const ti=this.idx(nr,nf);if(!this.board[ti]||this.board[ti].c!==col)moves.push({from:i,to:ti})}break;case 'b':case 'r':case 'q':let dirs=[];if(p.t==='b'||p.t==='q')dirs.push([1,1],[1,-1],[-1,1],[-1,-1]);if(p.t==='r'||p.t==='q')dirs.push([1,0],[-1,0],[0,1],[0,-1]);for(const[dr,df]of dirs){let nr=r+dr,nf=f+df;while(nr>=0&&nr<8&&nf>=0&&nf<8){const ti=this.idx(nr,nf);if(this.board[ti]){if(this.board[ti].c!==col)moves.push({from:i,to:ti});break}moves.push({from:i,to:ti});nr+=dr;nf+=df}}break;case 'k':for(const[dr,df]of[[-1,-1],[-1,0],[-1,1],[0,-1],[0,1],[1,-1],[1,0],[1,1]]){const nr=r+dr,nf=f+df;if(nr<0||nr>7||nf<0||nf>7)continue;const ti=this.idx(nr,nf);if(!this.board[ti]||this.board[ti].c!==col)moves.push({from:i,to:ti})}if(ignoreCastling)break;const row=col==='w'?7:0;const opp=col==='w'?'b':'w';if(r===row&&f===4){if((col==='w'?this.castling.wK:this.castling.bK)&&!this.board[this.idx(row,5)]&&!this.board[this.idx(row,6)]&&!this.isAttacked(this.idx(row,4),opp)&&!this.isAttacked(this.idx(row,5),opp))moves.push({from:i,to:this.idx(row,6),castle:'K'});if((col==='w'?this.castling.wQ:this.castling.bQ)&&!this.board[this.idx(row,3)]&&!this.board[this.idx(row,2)]&&!this.board[this.idx(row,1)]&&!this.isAttacked(this.idx(row,4),opp)&&!this.isAttacked(this.idx(row,3),opp))moves.push({from:i,to:this.idx(row,2),castle:'Q'})}break}}return moves}isAttacked(sq,byColor){return this.pseudoLegal(byColor,true).some(m=>m.to===sq)}findKing(col){return this.board.findIndex(p=>p&&p.c===col&&p.t==='k')}inCheck(col){return this.isAttacked(this.findKing(col),col==='w'?'b':'w')}legalMoves(col){const c=col||this.turn;return this.pseudoLegal(c).filter(m=>{const g2=this.clone();g2.applyMove(m);return!g2.inCheck(c)})}applyMove(m){const piece=this.board[m.from],cap=this.board[m.to];this.board[m.to]=m.promo?{c:piece.c,t:m.promo}:piece;this.board[m.from]=null;if(m.ep){const dir=piece.c==='w'?1:-1;this.board[m.to+dir*8]=null}this.enPassant=m.double?m.to+(piece.c==='w'?8:-8):null;if(m.castle){const row=this.rank(m.to);if(m.castle==='K'){this.board[this.idx(row,5)]=this.board[this.idx(row,7)];this.board[this.idx(row,7)]=null}else{this.board[this.idx(row,3)]=this.board[this.idx(row,0)];this.board[this.idx(row,0)]=null}}if(piece.t==='k'){if(piece.c==='w'){this.castling.wK=false;this.castling.wQ=false}else{this.castling.bK=false;this.castling.bQ=false}}if(piece.t==='r'){if(m.from===63)this.castling.wK=false;if(m.from===56)this.castling.wQ=false;if(m.from===7)this.castling.bK=false;if(m.from===0)this.castling.bQ=false}this.turn=this.turn==='w'?'b':'w';this.halfMoves++}updateStatus(){const legal=this.legalMoves();if(legal.length===0){if(this.inCheck(this.turn)){this.status='checkmate'}else{this.status='stalemate'}}else if(this.halfMoves>=100){this.status='draw'}}evaluate(){let score=0;for(let i=0;i<64;i++){const p=this.board[i];if(!p)continue;score+=p.c==='w'?PIECE_VALS[p.t]:-PIECE_VALS[p.t]}return score}minimax(depth,alpha,beta,maximizing){if(depth===0)return this.evaluate();const moves=this.legalMoves();if(moves.length===0){if(this.inCheck(this.turn))return maximizing?-100000:100000;return 0}let best=maximizing?-Infinity:Infinity;for(const m of moves){const g2=this.clone();g2.applyMove(m);const s=g2.minimax(depth-1,alpha,beta,!maximizing);if(maximizing){best=Math.max(best,s);alpha=Math.max(alpha,best)}else{best=Math.min(best,s);beta=Math.min(beta,best)}if(beta<=alpha)break}return best}bestMove(depth){const moves=this.legalMoves();if(!moves.length)return null;if(depth<=1){const scored=moves.map(m=>{const g=this.clone();g.applyMove(m);return{m,s:g.evaluate()+(Math.random()-0.5)*50}});return scored.sort((a,b)=>this.turn==='b'?a.s-b.s:b.s-a.s)[0].m}const maximizing=this.turn==='w';let best=maximizing?-Infinity:Infinity,bestM=moves[0];for(const m of moves){const g2=this.clone();g2.applyMove(m);const s=g2.minimax(depth-1,-Infinity,Infinity,!maximizing);if(maximizing?(s>best):(s<best)){best=s;bestM=m}else if(!maximizing?(s<best):(s>best)){best=s;bestM=m}}return bestM}}
     let chessGame=new ChessEngine();let chessSelected=null;let chessLegals=[];let aiDepth=3;let chessVergence=0;let chessLastMove=null;
-    function initChess(){chessGame.reset();chessSelected=null;chessLegals=[];chessLastMove=null;chessVergence=0;document.getElementById('chessStatus').innerText="White's Turn";document.getElementById('chessStatus').style.color="var(--green)";drawChess();}
+    function initChess(){chessGame.reset();chessSelected=null;chessLegals=[];chessLastMove=null;chessVergence=0;clearChessPiece();document.getElementById('chessStatus').innerText="White's Turn";document.getElementById('chessStatus').style.color="var(--green)";drawChess();}
+    const PIECE_NAMES={p:'Pawn',n:'Knight',b:'Bishop',r:'Rook',q:'Queen',k:'King'};
+    function showChessPiece(t){const el=document.getElementById('chess-piece-display');if(!el)return;el.innerText=PIECE_NAMES[t]||'';el.style.display='block';}
+    function clearChessPiece(){const el=document.getElementById('chess-piece-display');if(!el)return;el.innerText='';el.style.display='none';}
     function updateChessVergence(val){chessVergence=parseInt(val);if(activeGame==='CHESS')drawChess();}
-    function handleChessClick(cx,cy){if(activeGame!=='CHESS'||chessGame.turn!=='w'||chessGame.status!=='playing')return;let rect=canvas.getBoundingClientRect();let scaleX=canvas.width/rect.width;let scaleY=canvas.height/rect.height;let x=(cx-rect.left)*scaleX;let y=(cy-rect.top)*scaleY;let sq=360/8;let c=Math.floor(x/sq);let r=Math.floor(y/sq);if(c<0||c>7||r<0||r>7)return;let i=r*8+c;if(chessSelected===null){let p=chessGame.board[i];if(p&&p.c==='w'){chessSelected=i;chessLegals=chessGame.legalMoves().filter(m=>m.from===i);drawChess();}return;}const move=chessLegals.find(m=>m.to===i);if(move){chessGame.applyMove(move.promo?{...move,promo:'q'}:move);chessLastMove={from:move.from,to:move.to};chessGame.updateStatus();chessSelected=null;chessLegals=[];totalScore+=5;updateLevelUI();SFX.flap();drawChess();checkChessEnd();if(chessGame.status==='playing'){startChessThinkingAnim();setTimeout(chessAiTurn,100);}}else{let p=chessGame.board[i];if(p&&p.c==='w'){chessSelected=i;chessLegals=chessGame.legalMoves().filter(m=>m.from===i);}else{chessSelected=null;chessLegals=[];}drawChess();}}
+    function handleChessClick(cx,cy){if(activeGame!=='CHESS'||chessGame.turn!=='w'||chessGame.status!=='playing')return;let rect=canvas.getBoundingClientRect();let scaleX=canvas.width/rect.width;let scaleY=canvas.height/rect.height;let x=(cx-rect.left)*scaleX;let y=(cy-rect.top)*scaleY;let sq=360/8;let c=Math.floor(x/sq);let r=Math.floor(y/sq);if(c<0||c>7||r<0||r>7)return;let i=r*8+c;if(chessSelected===null){let p=chessGame.board[i];if(p&&p.c==='w'){chessSelected=i;chessLegals=chessGame.legalMoves().filter(m=>m.from===i);showChessPiece(p.t);drawChess();}return;}const move=chessLegals.find(m=>m.to===i);if(move){chessGame.applyMove(move.promo?{...move,promo:'q'}:move);chessLastMove={from:move.from,to:move.to};chessGame.updateStatus();chessSelected=null;chessLegals=[];clearChessPiece();totalScore+=5;updateLevelUI();SFX.flap();drawChess();checkChessEnd();if(chessGame.status==='playing'){startChessThinkingAnim();setTimeout(chessAiTurn,100);}}else{let p=chessGame.board[i];if(p&&p.c==='w'){chessSelected=i;chessLegals=chessGame.legalMoves().filter(m=>m.from===i);showChessPiece(p.t);}else{chessSelected=null;chessLegals=[];clearChessPiece();}drawChess();}}
     function startChessThinkingAnim(){ let dots=0; const el=document.getElementById('chessStatus'); el.style.color="var(--text-muted)"; el.style.animation="chessThinkPulse 0.7s ease-in-out infinite"; if(chessThinkTimer) clearInterval(chessThinkTimer); chessThinkTimer=setInterval(()=>{dots=(dots+1)%4;el.innerText="AI Thinking"+".".repeat(dots);},350); }
     function stopChessThinkingAnim(){ if(chessThinkTimer){clearInterval(chessThinkTimer);chessThinkTimer=null;} document.getElementById('chessStatus').style.animation=""; }
-    function chessAiTurn(){if(chessGame.status!=='playing')return;const m=chessGame.bestMove(aiDepth);if(m){chessGame.applyMove(m);chessLastMove={from:m.from,to:m.to};chessGame.updateStatus();}stopChessThinkingAnim();drawChess();SFX.hit();checkChessEnd();}
+    function chessAiTurn(){if(chessGame.status!=='playing')return;const m=chessGame.bestMove(aiDepth);if(m){chessGame.applyMove(m);chessLastMove={from:m.from,to:m.to};chessGame.updateStatus();}stopChessThinkingAnim();clearChessPiece();drawChess();SFX.hit();checkChessEnd();}
     function checkChessEnd(){ if(chessGame.status==='playing'){ let check=chessGame.inCheck(chessGame.turn); document.getElementById('chessStatus').innerText=chessGame.turn==='w'?(check?"⚠ CHECK!":"White's Turn"):"AI's Turn"; document.getElementById('chessStatus').style.color=check?"var(--red-eye)":"var(--green)"; }else{ document.getElementById('chessStatus').innerText=chessGame.status==='checkmate'?"CHECKMATE!":"DRAW"; document.getElementById('chessStatus').style.color="var(--red-eye)"; } }
-    function drawChess(){ if(activeGame!=='CHESS')return; clearCanvas(); ctx.globalCompositeOperation = 'source-over'; let sq=360/8; for(let r=0;r<8;r++){ for(let c=0;c<8;c++){ let i=r*8+c; ctx.fillStyle=(r+c)%2===0?'rgba(255,255,255,0.08)':'rgba(0,0,0,0.3)'; ctx.fillRect(Math.floor(c*sq),Math.floor(r*sq),Math.floor(sq),Math.floor(sq)); if(chessLastMove && (i===chessLastMove.from || i===chessLastMove.to)){ ctx.fillStyle='rgba(255,255,255,0.12)'; ctx.fillRect(Math.floor(c*sq),Math.floor(r*sq),Math.floor(sq),Math.floor(sq)); } if(chessSelected===i){ctx.fillStyle='rgba(138,180,248,0.3)';ctx.fillRect(Math.floor(c*sq),Math.floor(r*sq),Math.floor(sq),Math.floor(sq));} if(chessLegals.some(m=>m.to===i)){ctx.fillStyle='rgba(138,180,248,0.5)';ctx.beginPath();ctx.arc(c*sq+sq/2,r*sq+sq/2,sq/6,0,Math.PI*2);ctx.fill();} } } ctx.textAlign='center';ctx.textBaseline='middle'; for(let i=0;i<64;i++){ let p=chessGame.board[i];if(!p)continue; let r=Math.floor(i/8);let c=i%8; let x=c*sq+sq/2;let y=r*sq+sq/2+(sq*0.05); ctx.save(); if(chessSelected===i){ let bob = Math.sin(Date.now()*0.008)*2; y += bob; ctx.font=`${sq*0.88}px serif`; } else { ctx.font=`${sq*0.8}px serif`; } if(p.c==='w'){ctx.translate(chessVergence,0);ctx.fillStyle=appConfig.renderLeft;} else{ctx.translate(-chessVergence,0);ctx.fillStyle=appConfig.renderRight;} ctx.fillText(PIECE_CHARS[p.c+p.t],Math.floor(x),Math.floor(y)); ctx.restore(); } ctx.fillStyle='#0d0f12';ctx.fillRect(0,360,360,40); if(chessSelected!==null && activeGame==='CHESS') chessAnimLoop = requestAnimationFrame(()=>{if(activeGame==='CHESS')drawChess();}); }
+    function drawChess(){ if(activeGame!=='CHESS')return; clearCanvas(); ctx.globalCompositeOperation = 'source-over'; let sq=360/8; ctx.fillStyle='#000000'; ctx.fillRect(0,0,360,360); for(let r=0;r<8;r++){ for(let c=0;c<8;c++){ let i=r*8+c; if(chessLastMove && (i===chessLastMove.from || i===chessLastMove.to)){ ctx.fillStyle='rgba(255,255,255,0.10)'; ctx.fillRect(Math.floor(c*sq),Math.floor(r*sq),Math.floor(sq),Math.floor(sq)); } if(chessSelected===i){ctx.fillStyle='rgba(138,180,248,0.25)';ctx.fillRect(Math.floor(c*sq),Math.floor(r*sq),Math.floor(sq),Math.floor(sq));} if(chessLegals.some(m=>m.to===i)){ctx.fillStyle='rgba(138,180,248,0.5)';ctx.beginPath();ctx.arc(c*sq+sq/2,r*sq+sq/2,sq/6,0,Math.PI*2);ctx.fill();} ctx.strokeStyle='rgba(255,255,255,0.18)'; ctx.lineWidth=0.5; ctx.strokeRect(Math.floor(c*sq)+0.5,Math.floor(r*sq)+0.5,Math.floor(sq)-1,Math.floor(sq)-1); } } ctx.textAlign='center';ctx.textBaseline='middle'; for(let i=0;i<64;i++){ let p=chessGame.board[i];if(!p)continue; let r=Math.floor(i/8);let c=i%8; let x=c*sq+sq/2;let y=r*sq+sq/2+(sq*0.05); ctx.save(); if(chessSelected===i){ let bob = Math.sin(Date.now()*0.008)*2; y += bob; ctx.font=`${sq*0.88}px serif`; } else { ctx.font=`${sq*0.8}px serif`; } if(p.c==='w'){ctx.translate(chessVergence,0);ctx.fillStyle=appConfig.renderLeft;} else{ctx.translate(-chessVergence,0);ctx.fillStyle=appConfig.renderRight;} ctx.fillText(PIECE_CHARS[p.c+p.t],Math.floor(x),Math.floor(y)); ctx.restore(); } ctx.fillStyle='#0d0f12';ctx.fillRect(0,360,360,40); if(chessSelected!==null && activeGame==='CHESS') chessAnimLoop = requestAnimationFrame(()=>{if(activeGame==='CHESS')drawChess();}); }
 
     document.addEventListener("visibilitychange", () => {
         if (document.hidden) { stopGameFull(); stopSessionTimer(); } 
